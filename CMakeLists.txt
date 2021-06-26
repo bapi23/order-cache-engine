@@ -1,27 +1,31 @@
-project(OrderCache)
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.18)
 
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/609281088cfefc76f9d0ce82e1ff6c30cc3591e5.zip
-)
-# For Windows: Prevent overriding the parent project's compiler/linker settings
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-FetchContent_MakeAvailable(googletest)
+project(OrderCache VERSION 0.1.0)
 
-enable_testing()
+include(CTest)
+find_package(GTest REQUIRED)
+include(GoogleTest)
 
 add_executable(
-  tests
+  OrderCacheTest
   main_test.cpp
+  src/OrderCache.cpp
 )
 
+target_include_directories(OrderCacheTest PRIVATE include)
+
 target_link_libraries(
-  tests
-  gtest_main
+  OrderCacheTest
+  GTest::GTest
+  GTest::Main 
+  pthread
 )
 
 include(GoogleTest)
-gtest_discover_tests(tests)
+gtest_discover_tests(OrderCacheTest)
+
+set_target_properties(OrderCacheTest PROPERTIES
+            CXX_STANDARD 17
+            CXX_EXTENSIONS OFF
+            )
 

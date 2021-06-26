@@ -1,28 +1,35 @@
 #include "OrderCache.h"
 
 void OrderCache::addOrder(const Order& order){
-    if(secuityIds.find(order.securityID) == securityIds.end()){
+    if(securityIds.find(order.securityID) == securityIds.end()){
         securityIds[order.securityID] = SecurityId{};
     }
-    
+    securityIds[order.securityID].appendOrder(order);
+    orderIdToSecurityId[order.orderID] = order.securityID;
+
+    userIdToOrderIds[order.userID].push_back(order.orderID);
 }
 
 void OrderCache::cancelOrder(const std::string& orderId){
+    const auto securityID = orderIdToSecurityId[orderId];
+    securityIds[securityID].cancelOrderByOrderId(orderId);
+}
+
+void OrderCache::cancelOrdersForUser(const std::string& userId){
+    for(const auto& orderId: userIdToOrderIds[userId]){
+        const auto securityID = orderIdToSecurityId[orderId];
+        securityIds[securityID].cancelOrderByOrderId(orderId);
+    }
+}
+
+void OrderCache::cancelOrdersAboveQuantity(const std::string& securityId, int quantity){
 
 }
 
-void OrderCache::cancelOrdersForUser(const std::string& uderId){
+void OrderCache::cancelOrdersAtQuantity(const std::string& securityId, int quantity){
 
 }
 
-void OrderCache::cancelOrdersAboveQuantity(const std::string& secureId, int quantity){
-
-}
-
-void OrderCache::cancelOrdersAtQuantity(const std::string& secureId, int quantity){
-
-}
-
-void OrderCache::getCurrentQuantity(const std::string& secureId){
-
+int OrderCache::getMatchedQuantity(const std::string& securityId) const {
+    return securityIds.at(securityId).getMatchedQuantity();
 }

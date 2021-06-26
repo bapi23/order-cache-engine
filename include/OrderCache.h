@@ -1,3 +1,5 @@
+#pragma once
+
 #include <string>
 #include <unordered_map>
 
@@ -12,8 +14,10 @@ public:
     void cancelOrdersAboveQuantity(const std::string& secureId, int quantity);
     void cancelOrdersAtQuantity(const std::string& secureId, int quantity);
     
-    void getCurrentQuantity(const std::string& secureId);
+    int getMatchedQuantity(const std::string& secureId) const ;
 
 private:
-    std::unordered_map<std::string, SecurityId> secuityIds;
+    std::unordered_map<std::string, SecurityId> securityIds;
+    std::unordered_map<std::string, std::string> orderIdToSecurityId;
+    std::unordered_map<std::string, std::vector<std::string>> userIdToOrderIds;
 };

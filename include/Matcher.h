@@ -1,41 +1,76 @@
+#pragma once
+
+#include <cassert>
+
 #include <vector>
 #include <queue>
+#include <memory>
+#include <optional>
 #include "Order.hpp"
 
 
 class Matcher{
 
-    
-    void addOrder(const Order& order){
-        orders.push_back(order);
+public:
+    Matcher(const Order& sellOrder):
+        sellOrder(sellOrder)
+    {
     }
 
-    int getQuantity(){
-        int quantity = 0;
+    void addBuyOrder(const Order& order){
+        assert(sellOrder.companyName != order.companyName);
+
+        int maxMatched = std::min(order.remainingQuantity, sellOrder.remainingQuantity);
+        sellOrder.remainingQuantity -= maxMatched;
+        orders[order.orderID] = order;
+        orders[order.orderID].remainingQuantity -=maxMatched;
+    }
+
+    void removeBuyOrder(const std::string& order_id){
+
+        orders.erase(order_id);
+        const auto quantity_to_add = orders[order_id].quantity - orders[order_id].remainingQuantity;
+        sellOrder.remainingQuantity += quantity_to_add;
+    }
+
+    void removeBuyOrderByUserID(const std::string& userID){
+        std::vector<std::string> idsToRemove;
         for(const auto& order: orders){
-            if(order.side == "Buy"){
-                quantity -= order.quantity;
-            } else {
-                quantity += order.quantity;
+            if(order.second.userID == userID){
+                idsToRemove.push_back(order.second.orderID);
             }
         }
 
-        return quantity;
+        for(const auto& orderId: idsToRemove){
+            removeBuyOrder(orderId);
+        }
     }
 
-    int getMatchedQuantity(){
-        int sellQ = 0;
-        int buyQ = 0;
-        for(const auto& order: orders){
-            if(order.side == "Buy"){
-                buyQ -= order.quantity;
-            } else {
-                sellQ += order.quantity;
+    int getMatchedQuantity() const {
+        sellOrder.quantity - sellOrder.remainingQuantity;
+    }
+
+    bool hasRemainingSellQuantity(){
+        return sellOrder.remainingQuantity > 0;
+    }
+
+    std::string sellerCompanyName(){
+        return sellOrder.companyName;
+    }
+
+    std::optional<Order> getRemainingBuyOrder(){
+        for(auto const& order: orders){
+            if(order.second.remainingQuantity > 0){
+                Order remainingOrder = order.second;
+                remainingOrder.quantity = remainingOrder.remainingQuantity;
+                remainingOrder.remainingQuantity = remainingOrder.quantity;
+                return remainingOrder;
             }
         }
-        return std::min(sellQ, buyQ);
+        return std::optional<Order>();
     }
 
-    std::vector<Order> orders;
+    Order sellOrder;
+    std::unordered_map<std::string, Order> orders;
     
 };
