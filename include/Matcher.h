@@ -18,15 +18,14 @@ public:
     {
     }
 
-    std::optional<Order> addBuyOrder(const Order& order){
+    std::optional<Order> addBuyOrder(Order order){
         assert(sellOrder.companyName != order.companyName);
 
-        int maxMatched = std::min(order.quantity, sellOrder.remainingQuantity);
-        sellOrder.remainingQuantity -= maxMatched;
+        int maxMatched = std::min(order.quantity, sellOrder.quantity);
+        sellOrder.quantity -= maxMatched;
         orders[order.orderID] = order;
         orders[order.orderID].quantity -= maxMatched;
-        std::cout << "Sell" << sellOrder.orderID << ": before adding Buy:" << order.quantity << std::endl;
-        std::cout << "Sell" << sellOrder.orderID << ": after adding Buy:" << orders[order.orderID].quantity << std::endl;
+
 
         if(orders[order.orderID].quantity > 0){
             Order remainingOrder = orders[order.orderID];
@@ -45,7 +44,7 @@ public:
             orders.erase(orderID);
             const auto quantity_to_add = orders[orderID].quantity;
             std::cout << "Adding quantity" << quantity_to_add << std::endl;
-            sellOrder.remainingQuantity += quantity_to_add;
+            sellOrder.quantity += quantity_to_add;
         }
     }
 
@@ -63,11 +62,11 @@ public:
     }
 
     int getMatchedQuantity() const {
-        return sellOrder.quantity - sellOrder.remainingQuantity;
+        return sellOrder.initialQuantity - sellOrder.quantity;
     }
 
     bool hasRemainingSellQuantity(){
-        return sellOrder.remainingQuantity > 0;
+        return sellOrder.quantity > 0;
     }
 
     std::string sellerCompanyName(){

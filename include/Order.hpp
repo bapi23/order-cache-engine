@@ -23,6 +23,12 @@ public:
           companyName(companyName)
           {} 
 
+    void reserve(int quantityToReserve){
+        assert(quantity >= quantityToReserve);
+        remainingQuantity -= quantityToReserve;
+
+    }
+
     std::string orderID;     // e.g  "ID1" (unique id for order)
     std::string securityID;  // e.g. "US9128473801"
     std::string side;        // e.g. “Buy” or “Sell” 
