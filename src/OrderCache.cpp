@@ -6,7 +6,6 @@ void OrderCache::addOrder(const Order& order){
     }
     securityIds[order.securityID].appendOrder(order);
     orderIdToSecurityId[order.orderID] = order.securityID;
-
     userIdToOrderIds[order.userID].push_back(order.orderID);
 }
 

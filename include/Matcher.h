@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <iostream>
 
 #include <vector>
 #include <queue>
@@ -17,20 +18,35 @@ public:
     {
     }
 
-    void addBuyOrder(const Order& order){
+    std::optional<Order> addBuyOrder(const Order& order){
         assert(sellOrder.companyName != order.companyName);
 
-        int maxMatched = std::min(order.remainingQuantity, sellOrder.remainingQuantity);
+        int maxMatched = std::min(order.quantity, sellOrder.remainingQuantity);
         sellOrder.remainingQuantity -= maxMatched;
         orders[order.orderID] = order;
-        orders[order.orderID].remainingQuantity -=maxMatched;
+        orders[order.orderID].quantity -= maxMatched;
+        std::cout << "Sell" << sellOrder.orderID << ": before adding Buy:" << order.quantity << std::endl;
+        std::cout << "Sell" << sellOrder.orderID << ": after adding Buy:" << orders[order.orderID].quantity << std::endl;
+
+        if(orders[order.orderID].quantity > 0){
+            Order remainingOrder = orders[order.orderID];
+            remainingOrder.quantity = orders[order.orderID].quantity;
+            orders[order.orderID].quantity = maxMatched;
+            return remainingOrder;
+        }
+        orders[order.orderID].quantity = maxMatched;
+
+        return std::optional<Order>();
     }
 
-    void removeBuyOrder(const std::string& order_id){
-
-        orders.erase(order_id);
-        const auto quantity_to_add = orders[order_id].quantity - orders[order_id].remainingQuantity;
-        sellOrder.remainingQuantity += quantity_to_add;
+    void removeBuyOrder(const std::string& orderID){
+        auto foundIt = orders.find(orderID);
+        if(foundIt != orders.end()){
+            orders.erase(orderID);
+            const auto quantity_to_add = orders[orderID].quantity;
+            std::cout << "Adding quantity" << quantity_to_add << std::endl;
+            sellOrder.remainingQuantity += quantity_to_add;
+        }
     }
 
     void removeBuyOrderByUserID(const std::string& userID){
@@ -47,7 +63,7 @@ public:
     }
 
     int getMatchedQuantity() const {
-        sellOrder.quantity - sellOrder.remainingQuantity;
+        return sellOrder.quantity - sellOrder.remainingQuantity;
     }
 
     bool hasRemainingSellQuantity(){
@@ -58,19 +74,17 @@ public:
         return sellOrder.companyName;
     }
 
-    std::optional<Order> getRemainingBuyOrder(){
-        for(auto const& order: orders){
-            if(order.second.remainingQuantity > 0){
-                Order remainingOrder = order.second;
-                remainingOrder.quantity = remainingOrder.remainingQuantity;
-                remainingOrder.remainingQuantity = remainingOrder.quantity;
-                return remainingOrder;
-            }
+    std::vector<Order> getAllOrders(){
+        std::vector<Order> output;
+        for(const auto& order: orders){
+            output.push_back(order.second);
+            std::cout << "Removing order " << order.second.quantity << std::endl;
         }
-        return std::optional<Order>();
+        return output;
     }
 
     Order sellOrder;
+    //Unordered map because order doesn't matter inside matcher.
     std::unordered_map<std::string, Order> orders;
     
 };

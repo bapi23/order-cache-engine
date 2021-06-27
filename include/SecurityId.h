@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <algorithm>
 #include "Matcher.h"
 
 
@@ -29,26 +30,54 @@ public:
     }
 
     void cancelOrderByuserID(const std::string& userID){
-        for(auto& matcher: matchers){
-            matcher.removeBuyOrderByUserID(userID);
+        
+        std::vector<int> matcherIndicesToRemove;
+        
+        //Remove buy orders:
+        for(int i = 0; i < matchers.size(); ++i){
+            matchers[i].removeBuyOrderByUserID(userID);
         }
+
+        //Remove sell orders:
+        auto removeBegin = std::remove_if(matchers.begin(), matchers.end(), 
+        [&userID](const Matcher& matcher){ return matcher.sellOrder.userID == userID; });
+
+        for(auto it = removeBegin; it != matchers.end(); ++it){
+            std::vector<Order> matcherOrders = it->getAllOrders();
+            buyOrderQueue.insert(buyOrderQueue.end(), matcherOrders.begin(), matcherOrders.end());
+        }
+
+        matchers.erase(removeBegin, matchers.end());
+
         feedMatchersWithQueuedOrders();
     }
 
-    void cancelOrderByOrderId(const std::string& orderId){
+    void cancelOrderByOrderId(const std::string& orderID){
+
+        //Remove buy orders
         for(auto& matcher: matchers){
-            matcher.removeBuyOrder(orderId);
+            matcher.removeBuyOrder(orderID);
         }
+
+        //Remove sell order
+        auto matcherIt = std::find_if(matchers.begin(), matchers.end(), 
+        [&orderID](const Matcher& matcher){ return matcher.sellOrder.orderID == orderID; });
+
+        if(matcherIt != matchers.end()){
+            std::vector<Order> matcherOrders = matcherIt->getAllOrders();
+            buyOrderQueue.insert(buyOrderQueue.end(), matcherOrders.begin(), matcherOrders.end());
+            matchers.erase(matcherIt);
+        }
+
         feedMatchersWithQueuedOrders();
     }
 
-    private:
+private:
     std::optional<Order> feedMatchers(const Order& order){
         std::optional<Order> currentOrder = order;
         for(auto& matcher: matchers){
             if(matcher.hasRemainingSellQuantity() && matcher.sellerCompanyName() != order.companyName){
-                matcher.addBuyOrder(*currentOrder);
-                currentOrder = matcher.getRemainingBuyOrder();
+                currentOrder = matcher.addBuyOrder(*currentOrder);
                 if(!currentOrder){
                     return currentOrder;
                 }
@@ -69,6 +98,8 @@ public:
         buyOrderQueue = resultQueue;
     }
 
+    // Looks like we will iterate more often by matchers then performing removal of an item
+    // Anyway It could be optimized futher by using different collection but it would be good to know the input size and frequency before.
     std::vector<Matcher> matchers;
     std::vector<Order> buyOrderQueue;
 };
