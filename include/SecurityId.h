@@ -18,35 +18,24 @@ public:
     void appendOrder(const Order& order){
         if(order.side == "Sell"){
             matchers.emplace_back(order);
-            feedMatchersWithQueuedOrders();
         } else {
             buyOrderQueue.push_back(order);
-            auto remainingOrder = feedMatchers(order);
-            //if no one matcher handled entire buy request:
-            if(remainingOrder){
-                buyOrderQueue.push_back(*remainingOrder);
-            }
         }
+        feedMatchersWithQueuedOrders();
+
         quantityToOrderId.emplace(order.initialQuantity, order.orderID);
         orderIdToQuantity.emplace(order.orderID, order.initialQuantity);
     }
 
     void cancelOrderByOrderId(const std::string& orderID){
-
-        //Remove buy orders
-        for(auto& matcher: matchers){
-            matcher.removeBuyOrder(orderID);
-        }
-
+        removeBuyOrder(orderID);
         removeSellOrder(orderID);
-        updateInternalMapping(orderID);
-
         feedMatchersWithQueuedOrders();
-        
+
+        updateInternalMapping(orderID);
     }
 
     void cancelOrderAtQuantity(int quantity){
-        //Cancel buy orders:
         auto range = quantityToOrderId.equal_range(quantity);
         for (auto it=range.first; it!=range.second; ++it){
             for(auto matcher: matchers){
@@ -57,11 +46,9 @@ public:
         }
         quantityToOrderId.erase(range.first, range.second);
         feedMatchersWithQueuedOrders();
-        //Cancel sell orders:
     }
 
     void cancelOrderAboveQuantity(int quantity){
-        //Cancel buy orders:
         auto firstIt = quantityToOrderId.upper_bound(quantity);
         for (auto it=firstIt; it!=quantityToOrderId.end(); ++it){
             for(auto matcher: matchers){
@@ -75,6 +62,13 @@ public:
     }
 
 private:
+
+    void removeBuyOrder(const std::string& orderID)
+    {
+        for(auto& matcher: matchers){
+            matcher.removeBuyOrder(orderID);
+        }
+    }
     void removeSellOrder(const std::string& orderID)
     {
         //Remove sell order
