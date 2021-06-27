@@ -22,11 +22,12 @@ void OrderCache::cancelOrdersForUser(const std::string& userID){
     userIdToOrderIds.erase(userID);
 }
 
-void OrderCache::cancelOrdersAboveQuantity(const std::string& securityId, int quantity){
+void OrderCache::cancelOrdersAboveQuantity(const std::string& securityID, int quantity){
+    securityIds.at(securityID).cancelOrderAboveQuantity(quantity);
 }
 
-void OrderCache::cancelOrdersAtQuantity(const std::string& securityId, int quantity){
-
+void OrderCache::cancelOrdersAtQuantity(const std::string& securityID, int quantity){
+    securityIds.at(securityID).cancelOrderAtQuantity(quantity);
 }
 
 int OrderCache::getMatchedQuantity(const std::string& securityId) const {

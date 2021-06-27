@@ -159,6 +159,47 @@ TEST(SecurityIdTest, BuyOrderDistributedAccross3SellOrderCancelOneSellOrderAndAd
   EXPECT_EQ(10000, cache.getMatchedQuantity("SECURITYID_1"));
 }
 
+TEST(SecurityIdTest, RemoveAtGivenQuantity) {
+  OrderCache cache;
+
+  const auto buyOrder = Order{"ID_1", "SECURITYID_1", "Buy", 10000, "User_1", "A"};
+
+  const auto sellOrder1 = Order{"ID_2", "SECURITYID_1", "Sell", 2000, "User_1", "B"};
+  const auto sellOrder2 = Order{"ID_3", "SECURITYID_1", "Sell", 3000, "User_4", "B"};
+  const auto sellOrder3 = Order{"ID_4", "SECURITYID_1", "Sell", 3000, "User_2", "B"};
+
+  cache.addOrder(buyOrder);
+  cache.addOrder(sellOrder1);
+  cache.addOrder(sellOrder2);
+  cache.addOrder(sellOrder3);
+
+  EXPECT_EQ(8000, cache.getMatchedQuantity("SECURITYID_1"));
+  
+  cache.cancelOrdersAtQuantity("SECURITYID_1", 2000);
+  EXPECT_EQ(6000, cache.getMatchedQuantity("SECURITYID_1"));
+}
+
+TEST(SecurityIdTest, RemoveAboveGivenQuantity) {
+  OrderCache cache;
+
+  const auto buyOrder = Order{"ID_1", "SECURITYID_1", "Buy", 10000, "User_1", "A"};
+
+  const auto sellOrder1 = Order{"ID_2", "SECURITYID_1", "Sell", 2000, "User_1", "B"};
+  const auto sellOrder2 = Order{"ID_3", "SECURITYID_1", "Sell", 2501, "User_4", "B"};
+  const auto sellOrder3 = Order{"ID_4", "SECURITYID_1", "Sell", 3000, "User_2", "B"};
+
+  cache.addOrder(buyOrder);
+  cache.addOrder(sellOrder1);
+  cache.addOrder(sellOrder2);
+  cache.addOrder(sellOrder3);
+
+  EXPECT_EQ(7501, cache.getMatchedQuantity("SECURITYID_1"));
+  
+  cache.cancelOrdersAboveQuantity("SECURITYID_1", 2500);
+  EXPECT_EQ(2000, cache.getMatchedQuantity("SECURITYID_1"));
+}
+
+
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv); 
     return RUN_ALL_TESTS();
