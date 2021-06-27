@@ -29,29 +29,6 @@ public:
         }
     }
 
-    void cancelOrderByuserID(const std::string& userID){
-        
-        std::vector<int> matcherIndicesToRemove;
-        
-        //Remove buy orders:
-        for(int i = 0; i < matchers.size(); ++i){
-            matchers[i].removeBuyOrderByUserID(userID);
-        }
-
-        //Remove sell orders:
-        auto removeBegin = std::remove_if(matchers.begin(), matchers.end(), 
-        [&userID](const Matcher& matcher){ return matcher.sellOrder.userID == userID; });
-
-        for(auto it = removeBegin; it != matchers.end(); ++it){
-            std::vector<Order> matcherOrders = it->getAllOrders();
-            buyOrderQueue.insert(buyOrderQueue.end(), matcherOrders.begin(), matcherOrders.end());
-        }
-
-        matchers.erase(removeBegin, matchers.end());
-
-        feedMatchersWithQueuedOrders();
-    }
-
     void cancelOrderByOrderId(const std::string& orderID){
 
         //Remove buy orders

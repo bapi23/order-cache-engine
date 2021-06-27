@@ -23,41 +23,27 @@ public:
 
         int maxMatched = std::min(order.quantity, sellOrder.quantity);
         sellOrder.quantity -= maxMatched;
-        orders[order.orderID] = order;
-        orders[order.orderID].quantity -= maxMatched;
+        auto remainingQuantity = order.quantity - maxMatched;
 
+        std::optional<Order> remainingOrder;
 
-        if(orders[order.orderID].quantity > 0){
-            Order remainingOrder = orders[order.orderID];
-            remainingOrder.quantity = orders[order.orderID].quantity;
-            orders[order.orderID].quantity = maxMatched;
-            return remainingOrder;
+        if(remainingQuantity > 0){
+            remainingOrder = order;
+            remainingOrder->quantity = remainingQuantity;
         }
-        orders[order.orderID].quantity = maxMatched;
 
-        return std::optional<Order>();
+        order.quantity = maxMatched;
+        orders.emplace(order.orderID, order);
+
+        return remainingOrder;
     }
 
     void removeBuyOrder(const std::string& orderID){
         auto foundIt = orders.find(orderID);
         if(foundIt != orders.end()){
-            orders.erase(orderID);
-            const auto quantity_to_add = orders[orderID].quantity;
-            std::cout << "Adding quantity" << quantity_to_add << std::endl;
+            const auto quantity_to_add = foundIt->second.quantity;
             sellOrder.quantity += quantity_to_add;
-        }
-    }
-
-    void removeBuyOrderByUserID(const std::string& userID){
-        std::vector<std::string> idsToRemove;
-        for(const auto& order: orders){
-            if(order.second.userID == userID){
-                idsToRemove.push_back(order.second.orderID);
-            }
-        }
-
-        for(const auto& orderId: idsToRemove){
-            removeBuyOrder(orderId);
+            orders.erase(orderID);
         }
     }
 
