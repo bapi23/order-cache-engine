@@ -65,7 +65,5 @@ public:
     }
 
     Order sellOrder;
-    //Unordered map because order doesn't matter inside matcher.
     std::vector<Order> orders;
-    
 };

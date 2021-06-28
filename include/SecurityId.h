@@ -68,6 +68,10 @@ private:
         for(auto& matcher: matchers){
             matcher.removeBuyOrder(orderID);
         }
+        
+        auto beginToRemoveIt = std::remove_if(unmatchedOrdersQueue.begin(), unmatchedOrdersQueue.end(), 
+                                    [&orderID](const Order& o){ return o.orderID == orderID;});
+        unmatchedOrdersQueue.erase(beginToRemoveIt, unmatchedOrdersQueue.end());
     }
     void removeSellOrder(const std::string& orderID)
     {
@@ -130,7 +134,6 @@ private:
     }
 
     std::vector<Matcher> matchers;
-    #std::vector<Order> matchedOrders;
     std::vector<Order> unmatchedOrdersQueue;
 
     std::unordered_map<std::string, int>  orderIdToQuantity;

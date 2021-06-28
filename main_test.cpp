@@ -61,6 +61,19 @@ TEST(SecurityIdTest, AddTwoOrdersAndRemoveOneShouldNotMatch) {
   EXPECT_EQ(0, cache.getMatchedQuantity("SECURITYID_1"));
 }
 
+TEST(SecurityIdTest, RemoveUnmatchedOrderShouldNotMatch) {
+  OrderCache cache;
+  const auto order1 = Order{"ID_1", "SECURITYID_1", "Buy", 1000, "User_1", "A"};
+
+  cache.addOrder(order1);
+  cache.cancelOrder("ID_1");
+
+  const auto order2 = Order{"ID_2", "SECURITYID_1", "Sell", 1000, "User_1", "B"};
+  cache.addOrder(order2);
+
+  EXPECT_EQ(0, cache.getMatchedQuantity("SECURITYID_1"));
+}
+
 TEST(SecurityIdTest, AddTwoSellAndRemoveOneSellShouldMatchOnlyOne) {
   OrderCache cache;
   const auto order2 = Order{"ID_1", "SECURITYID_1", "Sell", 1000, "User_1", "B"};
@@ -184,16 +197,22 @@ TEST(SecurityIdTest, RemoveAtGivenQuantity) {
 TEST(SecurityIdTest, RemoveAboveGivenQuantity) {
   OrderCache cache;
 
-  const auto buyOrder = Order{"ID_1", "SECURITYID_1", "Buy", 10000, "User_1", "A"};
+  const auto sellOrder1 = Order{"ID_1", "SECURITYID_1", "Sell", 2000, "User_1", "A"};
+  const auto sellOrder2 = Order{"ID_1", "SECURITYID_1", "Sell", 2000, "User_1", "A"};
+  const auto sellOrder3 = Order{"ID_1", "SECURITYID_1", "Sell", 2000, "User_1", "A"};
+  const auto sellOrder4 = Order{"ID_1", "SECURITYID_1", "Sell", 2000, "User_1", "A"};
 
-  const auto sellOrder1 = Order{"ID_2", "SECURITYID_1", "Sell", 2000, "User_1", "B"};
-  const auto sellOrder2 = Order{"ID_3", "SECURITYID_1", "Sell", 2501, "User_4", "B"};
-  const auto sellOrder3 = Order{"ID_4", "SECURITYID_1", "Sell", 3000, "User_2", "B"};
+  const auto buyOrder1 = Order{"ID_2", "SECURITYID_1", "Buy", 2000, "User_1", "B"};
+  const auto buyOrder2 = Order{"ID_3", "SECURITYID_1", "Buy", 2501, "User_4", "B"};
+  const auto buyOrder3 = Order{"ID_4", "SECURITYID_1", "Buy", 3000, "User_2", "B"};
 
-  cache.addOrder(buyOrder);
   cache.addOrder(sellOrder1);
   cache.addOrder(sellOrder2);
   cache.addOrder(sellOrder3);
+  cache.addOrder(sellOrder4);
+  cache.addOrder(buyOrder1);
+  cache.addOrder(buyOrder2);
+  cache.addOrder(buyOrder3);
 
   EXPECT_EQ(7501, cache.getMatchedQuantity("SECURITYID_1"));
   
@@ -230,10 +249,10 @@ TEST(SecurityIdTest, AddOrderPerformanceTest) {
 }
 
 TEST(SecurityIdTest, RemoveGivenIDPerformanceTest) {
-  constexpr int NUM_OF_SAMPLES = 10000;
+  constexpr int NUM_OF_SAMPLES = 1000;
   OrderCache cache;
 
-  for(int i = 0; i < 10000; ++i){
+  for(int i = 0; i < 1000; ++i){
     const auto sellOrder = Order{"SELL" + std::to_string(i), "SECURITYID_1", "Sell", 1000, "User_1", "COMP_" + std::to_string(i)};
 
     cache.addOrder(sellOrder);
@@ -259,35 +278,35 @@ TEST(SecurityIdTest, RemoveGivenIDPerformanceTest) {
 
 }
 
-// TEST(SecurityIdTest, RemoveAboveGivenQuantityPerformanceTest) {
-//   constexpr int NUM_OF_SAMPLES = 10000;
-//   OrderCache cache;
+TEST(SecurityIdTest, RemoveAboveGivenQuantityPerformanceTest) {
+  constexpr int NUM_OF_SAMPLES = 1000;
+  OrderCache cache;
 
-//   for(int i = 0; i < 10000; ++i){
-//     const auto sellOrder = Order{"SELL" + std::to_string(i), "SECURITYID_1", "Sell", 1000, "User_1", "COMP_" + std::to_string(i)};
+  for(int i = 0; i < 1000; ++i){
+    const auto sellOrder = Order{"SELL" + std::to_string(i), "SECURITYID_1", "Sell", 1000, "User_1", "COMP_" + std::to_string(i)};
 
-//     cache.addOrder(sellOrder);
-//   }
+    cache.addOrder(sellOrder);
+  }
 
-//   //prepare ids:
-//   std::vector<std::string> ids;
-//   for(int i = 0; i < NUM_OF_SAMPLES; ++i){
-//     ids.push_back(std::to_string(i));
-//   }
+  //prepare ids:
+  std::vector<std::string> ids;
+  for(int i = 0; i < NUM_OF_SAMPLES; ++i){
+    ids.push_back(std::to_string(i));
+  }
 
-//   for(int i = 0; i < NUM_OF_SAMPLES; ++i){
-//     cache.addOrder(Order{ids[i], "SECURITYID_1", "Buy", i, "User_1", "B"});
-//   }
+  for(int i = 0; i < NUM_OF_SAMPLES; ++i){
+    cache.addOrder(Order{ids[i], "SECURITYID_1", "Buy", i, "User_1", "B"});
+  }
 
-//   std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-//   for(int i = 0; i < NUM_OF_SAMPLES; ++i){
-//     cache.cancelOrdersAboveQuantity("SECURITYID_1", 1000);
-//   }
-//   std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+  std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+  for(int i = 0; i < NUM_OF_SAMPLES; ++i){
+    cache.cancelOrdersAboveQuantity("SECURITYID_1", 1000);
+  }
+  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
 
-//   std::cout << "Time elapsed = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
+  std::cout << "Time elapsed = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
 
-// }
+}
 
 
 
