@@ -33,17 +33,18 @@ public:
         }
 
         order.quantity = maxMatched;
-        orders.emplace(order.orderID, order);
+        orders.push_back(order);
 
         return remainingOrder;
     }
 
     void removeBuyOrder(const std::string& orderID){
-        auto foundIt = orders.find(orderID);
+        auto foundIt = std::find_if(orders.begin(), orders.end(), [&orderID](const Order& o){return o.orderID == orderID;});
+        
         if(foundIt != orders.end()){
-            const auto quantity_to_add = foundIt->second.quantity;
+            const auto quantity_to_add = foundIt->quantity;
             sellOrder.quantity += quantity_to_add;
-            orders.erase(orderID);
+            orders.erase(foundIt);
         }
     }
 
@@ -59,17 +60,12 @@ public:
         return sellOrder.companyName;
     }
 
-    std::vector<Order> getAllOrders(){
-        std::vector<Order> output;
-        for(const auto& order: orders){
-            output.push_back(order.second);
-            std::cout << "Removing order " << order.second.quantity << std::endl;
-        }
-        return output;
+    std::vector<Order> collectAllOrders(){
+        return std::move(orders);
     }
 
     Order sellOrder;
     //Unordered map because order doesn't matter inside matcher.
-    std::unordered_map<std::string, Order> orders;
+    std::vector<Order> orders;
     
 };

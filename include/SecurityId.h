@@ -19,7 +19,7 @@ public:
         if(order.side == "Sell"){
             matchers.emplace_back(order);
         } else {
-            buyOrderQueue.push_back(order);
+            unmatchedOrdersQueue.push_back(order);
         }
         feedMatchersWithQueuedOrders();
 
@@ -32,14 +32,14 @@ public:
         removeSellOrder(orderID);
         feedMatchersWithQueuedOrders();
 
-        updateInternalMapping(orderID);
+        removeFromInternalQuantityMapping(orderID);
     }
 
     void cancelOrderAtQuantity(int quantity){
         auto range = quantityToOrderId.equal_range(quantity);
         for (auto it=range.first; it!=range.second; ++it){
             for(auto matcher: matchers){
-                matcher.removeBuyOrder(it->second);
+                removeBuyOrder(it->second);
                 removeSellOrder(it->second);
                 orderIdToQuantity.erase(it->second);
             }
@@ -51,8 +51,8 @@ public:
     void cancelOrderAboveQuantity(int quantity){
         auto firstIt = quantityToOrderId.upper_bound(quantity);
         for (auto it=firstIt; it!=quantityToOrderId.end(); ++it){
-            for(auto matcher: matchers){
-                matcher.removeBuyOrder(it->second);
+            for(auto& matcher: matchers){
+                removeBuyOrder(it->second);
                 removeSellOrder(it->second);
                 orderIdToQuantity.erase(it->second);
             }
@@ -76,8 +76,8 @@ private:
         [&orderID](const Matcher& matcher){ return matcher.sellOrder.orderID == orderID; });
 
         if(matcherIt != matchers.end()){
-            std::vector<Order> matcherOrders = matcherIt->getAllOrders();
-            buyOrderQueue.insert(buyOrderQueue.end(), matcherOrders.begin(), matcherOrders.end());
+            std::vector<Order> matcherOrders = matcherIt->collectAllOrders();
+            unmatchedOrdersQueue.insert(unmatchedOrdersQueue.end(), matcherOrders.begin(), matcherOrders.end());
             matchers.erase(matcherIt);
         }
     }
@@ -86,6 +86,8 @@ private:
         std::optional<Order> currentOrder = order;
         for(auto& matcher: matchers){
             if(matcher.hasRemainingSellQuantity() && matcher.sellerCompanyName() != order.companyName){
+                orderIdToMatchers[currentOrder->orderID].push_back(&matcher);
+                matcherToOrderIds.emplace(&matcher, currentOrder->orderID);
                 currentOrder = matcher.addBuyOrder(*currentOrder);
                 if(!currentOrder){
                     return currentOrder;
@@ -98,16 +100,16 @@ private:
     void feedMatchersWithQueuedOrders(){
         //check if we can handle now existing buy orders:
         std::vector<Order> resultQueue;
-        for(const auto& order: buyOrderQueue){
+        for(const auto& order: unmatchedOrdersQueue){
             auto remainingOrder = feedMatchers(order);
             if(remainingOrder){
                 resultQueue.push_back(*remainingOrder);
             }
         }
-        buyOrderQueue = resultQueue;
+        unmatchedOrdersQueue = resultQueue;
     }
 
-    void updateInternalMapping(const std::string& orderID){
+    void removeFromInternalQuantityMapping(const std::string& orderID){
         auto found_quantity = orderIdToQuantity.find(orderID);
         assert(found_quantity != orderIdToQuantity.end());
 
@@ -123,8 +125,17 @@ private:
         }
     }
 
+    void removeFromInternalMatchersMapping(){
+
+    }
+
     std::vector<Matcher> matchers;
-    std::vector<Order> buyOrderQueue;
-    std::multimap<int, std::string>  quantityToOrderId;
+    #std::vector<Order> matchedOrders;
+    std::vector<Order> unmatchedOrdersQueue;
+
     std::unordered_map<std::string, int>  orderIdToQuantity;
+    std::multimap<int, std::string>  quantityToOrderId;
+
+    std::unordered_map<std::string, std::vector<Matcher*>> orderIdToMatchers;
+    std::multimap<Matcher*, std::string> matcherToOrderIds;
 };

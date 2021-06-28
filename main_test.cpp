@@ -205,8 +205,11 @@ TEST(SecurityIdTest, AddOrderPerformanceTest) {
   constexpr int NUM_OF_SAMPLES = 10000;
   OrderCache cache;
 
-  const auto sellOrder = Order{"ID_1", "SECURITYID_1", "Sell", NUM_OF_SAMPLES*10, "User_1", "A"};
-  cache.addOrder(sellOrder);
+  for(int i = 0; i < 10000; ++i){
+    const auto sellOrder = Order{"SELL" + std::to_string(i), "SECURITYID_1", "Sell", 1000, "User_1", "COMP_" + std::to_string(i)};
+
+    cache.addOrder(sellOrder);
+  }
 
   //prepare ids:
   std::vector<std::string> ids;
@@ -225,6 +228,67 @@ TEST(SecurityIdTest, AddOrderPerformanceTest) {
 
   EXPECT_EQ(NUM_OF_SAMPLES*10, cache.getMatchedQuantity("SECURITYID_1"));
 }
+
+TEST(SecurityIdTest, RemoveGivenIDPerformanceTest) {
+  constexpr int NUM_OF_SAMPLES = 10000;
+  OrderCache cache;
+
+  for(int i = 0; i < 10000; ++i){
+    const auto sellOrder = Order{"SELL" + std::to_string(i), "SECURITYID_1", "Sell", 1000, "User_1", "COMP_" + std::to_string(i)};
+
+    cache.addOrder(sellOrder);
+  }
+
+  //prepare ids:
+  std::vector<std::string> ids;
+  for(int i = 0; i < NUM_OF_SAMPLES; ++i){
+    ids.push_back(std::to_string(i));
+  }
+
+  for(int i = 0; i < NUM_OF_SAMPLES; ++i){
+    cache.addOrder(Order{ids[i], "SECURITYID_1", "Buy", 10, "User_1", "B"});
+  }
+
+  std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+  for(int i = 0; i < NUM_OF_SAMPLES; ++i){
+    cache.cancelOrder(ids[i]);
+  }
+  std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+  std::cout << "Time elapsed = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
+
+}
+
+// TEST(SecurityIdTest, RemoveAboveGivenQuantityPerformanceTest) {
+//   constexpr int NUM_OF_SAMPLES = 10000;
+//   OrderCache cache;
+
+//   for(int i = 0; i < 10000; ++i){
+//     const auto sellOrder = Order{"SELL" + std::to_string(i), "SECURITYID_1", "Sell", 1000, "User_1", "COMP_" + std::to_string(i)};
+
+//     cache.addOrder(sellOrder);
+//   }
+
+//   //prepare ids:
+//   std::vector<std::string> ids;
+//   for(int i = 0; i < NUM_OF_SAMPLES; ++i){
+//     ids.push_back(std::to_string(i));
+//   }
+
+//   for(int i = 0; i < NUM_OF_SAMPLES; ++i){
+//     cache.addOrder(Order{ids[i], "SECURITYID_1", "Buy", i, "User_1", "B"});
+//   }
+
+//   std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+//   for(int i = 0; i < NUM_OF_SAMPLES; ++i){
+//     cache.cancelOrdersAboveQuantity("SECURITYID_1", 1000);
+//   }
+//   std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+
+//   std::cout << "Time elapsed = " << std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() << "[µs]" << std::endl;
+
+// }
+
 
 
 int main(int argc, char **argv) {
