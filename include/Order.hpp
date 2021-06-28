@@ -19,7 +19,7 @@ public:
           quantity(quantity),
           userID(userID),
           companyName(companyName)
-          {} 
+          {}
 
     std::string orderID;     // e.g  "ID1" (unique id for order)
     std::string securityID;  // e.g. "US9128473801"
