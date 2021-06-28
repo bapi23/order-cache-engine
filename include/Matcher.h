@@ -1,12 +1,12 @@
 #pragma once
 
 #include <cassert>
-#include <iostream>
 
+#include <algorithm>
 #include <vector>
 #include <queue>
-#include <memory>
 #include <optional>
+
 #include "Order.hpp"
 
 
@@ -19,11 +19,9 @@ public:
     }
 
     std::optional<Order> addBuyOrder(Order order){
-        assert(sellOrder.companyName != order.companyName);
-
-        int maxMatched = std::min(order.quantity, sellOrder.quantity);
-        sellOrder.quantity -= maxMatched;
-        auto remainingQuantity = order.quantity - maxMatched;
+        const int matchedQuantity = std::min(order.quantity, sellOrder.quantity);
+        sellOrder.quantity -= matchedQuantity;
+        const int remainingQuantity = order.quantity - matchedQuantity;
 
         std::optional<Order> remainingOrder;
 
@@ -32,7 +30,7 @@ public:
             remainingOrder->quantity = remainingQuantity;
         }
 
-        order.quantity = maxMatched;
+        order.quantity = matchedQuantity;
         orders.push_back(order);
 
         return remainingOrder;
@@ -56,7 +54,7 @@ public:
         return sellOrder.quantity > 0;
     }
 
-    std::string sellerCompanyName(){
+    std::string sellOrderCompanyName(){
         return sellOrder.companyName;
     }
 
@@ -64,6 +62,11 @@ public:
         return std::move(orders);
     }
 
+    std::string getSellOrderID() const {
+        return sellOrder.orderID;
+    }
+
+private:
     Order sellOrder;
     std::vector<Order> orders;
 };
