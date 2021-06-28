@@ -58,8 +58,8 @@ public:
         return sellOrder.companyName;
     }
 
-    std::vector<Order> collectAllOrders(){
-        return std::move(orders);
+    std::vector<Order> retrieveAllOrders(){
+        return orders;
     }
 
     std::string getSellOrderID() const {

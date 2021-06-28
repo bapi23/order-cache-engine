@@ -26,6 +26,7 @@ private:
     void feedMatchersWithQueuedOrders();
 
     void removeFromInternalQuantityMapping(const std::string& orderID);
+    void mergeBuyOrdersAfterRemovingSellOrder(const std::vector<Order>& orders);
 
     std::vector<Matcher> matchers;
     std::vector<Order> unmatchedOrdersQueue;

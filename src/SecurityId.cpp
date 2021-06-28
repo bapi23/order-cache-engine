@@ -71,9 +71,20 @@ void SecurityId::removeSellOrder(const std::string& orderID)
     [&orderID](const Matcher& matcher){ return matcher.getSellOrderID() == orderID; });
 
     if(matcherIt != matchers.end()){
-        std::vector<Order> matcherOrders = matcherIt->collectAllOrders();
-        unmatchedOrdersQueue.insert(unmatchedOrdersQueue.end(), matcherOrders.begin(), matcherOrders.end());
+        mergeBuyOrdersAfterRemovingSellOrder(matcherIt->retrieveAllOrders());
         matchers.erase(matcherIt);
+    }
+}
+
+void SecurityId::mergeBuyOrdersAfterRemovingSellOrder(const std::vector<Order>& orders){
+    for(const auto& order: orders){
+        auto foundIt = std::find_if(unmatchedOrdersQueue.begin(), unmatchedOrdersQueue.end(), 
+        [&order](const Order& o){ return order.orderID == o.orderID;});
+        if(foundIt != unmatchedOrdersQueue.end()){
+            foundIt->quantity += order.quantity;
+        } else {
+            unmatchedOrdersQueue.push_back(order);
+        }
     }
 }
 
