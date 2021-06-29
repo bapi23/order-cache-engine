@@ -30,7 +30,7 @@ void SecurityId::cancelOrderByOrderId(const std::string& orderID){
 void SecurityId::cancelOrderAtQuantity(int quantity){
     auto range = quantityToOrderId.equal_range(quantity);
     for (auto it=range.first; it!=range.second; ++it){
-        for(auto matcher: matchers){
+        for(auto& matcher: matchers){
             removeBuyOrder(it->second);
             removeSellOrder(it->second);
             orderIdToQuantity.erase(it->second);
