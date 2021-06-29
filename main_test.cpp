@@ -6,17 +6,17 @@
 #include "OrderCache.h"
 
 // Demonstrate some basic assertions.
-TEST_CASE("AddTwoOrdersShouldMatch", "SecurityIdTest") {
+TEST_CASE("AddTwoOrdersShouldMatch", "[ordercache]") {
   OrderCache cache;
-  const auto order1 = Order{"ID_1", "SECURITYID_1", "Buy", 1000, "User_1", "A"};
-  const auto order2 = Order{"ID_2", "SECURITYID_1", "Sell", 1000, "User_1", "B"};
+  auto order1 = Order{"ID_1", "SECURITYID_1", "Buy", 1000, "User_1", "A"};
+  auto order2 = Order{"ID_2", "SECURITYID_1", "Sell", 1000, "User_1", "B"};
 
-  cache.addOrder(order1);
-  cache.addOrder(order2);
+  cache.addOrder(std::move(order1));
+  cache.addOrder(std::move(order2));
   REQUIRE(1000 == cache.getMatchedQuantity("SECURITYID_1"));
 }
 
-TEST_CASE("GivenExampleTest", "SecurityIdTest") {
+TEST_CASE("GivenExampleTest", "[ordercache]") {
   OrderCache cache;
   // OrdId1 US9128473801 Buy  1000 User1 CompanyA
   // OrdId2 US5422358DA3 Sell 3000 User2 CompanyB
@@ -27,68 +27,49 @@ TEST_CASE("GivenExampleTest", "SecurityIdTest") {
   // OrdId7 US5422358DA3 Buy  2000 User7 CompanyE
   // OrdId8 US5422358DA3 Sell 5000 User8 CompanyE
 
-  const auto order1 = Order{"OrdId1", "US9128473801", "Buy",  1000, "User1", "CompanyA"};
-  const auto order2 = Order{"OrdId2", "US5422358DA3", "Sell", 3000, "User2", "CompanyB"};
-  const auto order3 = Order{"OrdId3", "US9128473801", "Sell", 500,  "User3", "CompanyA"};
-  const auto order4 = Order{"OrdId4", "US5422358DA3", "Buy",  600,  "User4", "CompanyC"};
-  const auto order5 = Order{"OrdId5", "US5422358DA3", "Buy",  100,  "User5", "CompanyB"};
-  const auto order6 = Order{"OrdId6", "US19635GY645", "Buy",  1000, "User6", "CompanyD"};
-  const auto order7 = Order{"OrdId7", "US5422358DA3", "Buy",  2000, "User7", "CompanyE"};
-  const auto order8 = Order{"OrdId8", "US5422358DA3", "Sell", 5000, "User8", "CompanyE"};
 
-
-  cache.addOrder(order1);
-  cache.addOrder(order2);
-  cache.addOrder(order3);
-  cache.addOrder(order4);
-  cache.addOrder(order5);
-  cache.addOrder(order6);
-  cache.addOrder(order7);
-  cache.addOrder(order8);
+  cache.addOrder(Order{"OrdId1", "US9128473801", "Buy",  1000, "User1", "CompanyA"});
+  cache.addOrder(Order{"OrdId2", "US5422358DA3", "Sell", 3000, "User2", "CompanyB"});
+  cache.addOrder(Order{"OrdId3", "US9128473801", "Sell", 500,  "User3", "CompanyA"});
+  cache.addOrder(Order{"OrdId4", "US5422358DA3", "Buy",  600,  "User4", "CompanyC"});
+  cache.addOrder(Order{"OrdId5", "US5422358DA3", "Buy",  100,  "User5", "CompanyB"});
+  cache.addOrder(Order{"OrdId6", "US19635GY645", "Buy",  1000, "User6", "CompanyD"});
+  cache.addOrder(Order{"OrdId7", "US5422358DA3", "Buy",  2000, "User7", "CompanyE"});
+  cache.addOrder(Order{"OrdId8", "US5422358DA3", "Sell", 5000, "User8", "CompanyE"});
   REQUIRE(cache.getMatchedQuantity("US5422358DA3") == 2700);
   REQUIRE(cache.getMatchedQuantity("US19635GY645") == 0);
   REQUIRE(cache.getMatchedQuantity("US9128473801") == 0);
 }
 
-TEST_CASE("AddTwoOrdersAndRemoveOneShouldNotMatch", "SecurityIdTest") {
+TEST_CASE("AddTwoOrdersAndRemoveOneShouldNotMatch", "[ordercache]") {
   OrderCache cache;
-  const auto order1 = Order{"ID_1", "SECURITYID_1", "Buy", 1000, "User_1", "A"};
-  const auto order2 = Order{"ID_2", "SECURITYID_1", "Sell", 1000, "User_1", "B"};
 
-  cache.addOrder(order1);
-  cache.addOrder(order2);
+  cache.addOrder(Order{"ID_1", "SECURITYID_1", "Buy", 1000, "User_1", "A"});
+  cache.addOrder(Order{"ID_2", "SECURITYID_1", "Sell", 1000, "User_1", "B"});
   REQUIRE(cache.getMatchedQuantity("SECURITYID_1") == 1000);
 
   cache.cancelOrder("ID_1");
   REQUIRE(cache.getMatchedQuantity("SECURITYID_1") == 0);
 }
 
-TEST_CASE("RemoveUnmatchedOrderShouldNotMatch", "SecurityIdTest") {
+TEST_CASE("RemoveUnmatchedOrderShouldNotMatch", "[ordercache]") {
   OrderCache cache;
-  const auto order1 = Order{"ID_1", "SECURITYID_1", "Buy", 1000, "User_1", "A"};
 
-  cache.addOrder(order1);
+  cache.addOrder(Order{"ID_1", "SECURITYID_1", "Buy", 1000, "User_1", "A"});
   cache.cancelOrder("ID_1");
 
-  const auto order2 = Order{"ID_2", "SECURITYID_1", "Sell", 1000, "User_1", "B"};
-  cache.addOrder(order2);
+  cache.addOrder(Order{"ID_2", "SECURITYID_1", "Sell", 1000, "User_1", "B"});
 
   REQUIRE(cache.getMatchedQuantity("SECURITYID_1") == 0);
 }
 
-TEST_CASE("AddTwoSellAndRemoveOneSellShouldMatchOnlyOne", "SecurityIdTest") {
+TEST_CASE("AddTwoSellAndRemoveOneSellShouldMatchOnlyOne", "[ordercache]") {
   OrderCache cache;
-  const auto order2 = Order{"ID_1", "SECURITYID_1", "Sell", 1000, "User_1", "B"};
-  const auto order1 = Order{"ID_2", "SECURITYID_1", "Buy", 1000, "User_1", "A"};
 
-  const auto order3 = Order{"ID_3", "SECURITYID_2", "Sell", 1000, "User_1", "B"};
-  const auto order4 = Order{"ID_4", "SECURITYID_2", "Buy", 1000, "User_1", "A"};
-
-
-  cache.addOrder(order1);
-  cache.addOrder(order2);
-  cache.addOrder(order3);
-  cache.addOrder(order4);
+  cache.addOrder(Order{"ID_1", "SECURITYID_1", "Sell", 1000, "User_1", "B"});
+  cache.addOrder(Order{"ID_2", "SECURITYID_1", "Buy", 1000, "User_1", "A"});
+  cache.addOrder(Order{"ID_3", "SECURITYID_2", "Sell", 1000, "User_1", "B"});
+  cache.addOrder(Order{"ID_4", "SECURITYID_2", "Buy", 1000, "User_1", "A"});
   REQUIRE(cache.getMatchedQuantity("SECURITYID_1") == 1000);
   REQUIRE(cache.getMatchedQuantity("SECURITYID_2") == 1000);
 
@@ -98,97 +79,62 @@ TEST_CASE("AddTwoSellAndRemoveOneSellShouldMatchOnlyOne", "SecurityIdTest") {
   REQUIRE(cache.getMatchedQuantity("SECURITYID_2") == 0);
 }
 
-TEST_CASE("BuyOrderDistributedAccross3SellOrder", "SecurityIdTest") {
+TEST_CASE("BuyOrderDistributedAccross3SellOrder", "[ordercache]") {
   OrderCache cache;
 
-  const auto buyOrder = Order{"ID_1", "SECURITYID_1", "Buy", 10000, "User_1", "A"};
-
-  const auto sellOrder1 = Order{"ID_2", "SECURITYID_1", "Sell", 3000, "User_1", "B"};
-  const auto sellOrder2 = Order{"ID_3", "SECURITYID_1", "Sell", 3000, "User_4", "B"};
-  const auto sellOrder3 = Order{"ID_4", "SECURITYID_1", "Sell", 3000, "User_2", "B"};
-
-
-
-  cache.addOrder(buyOrder);
-  cache.addOrder(sellOrder1);
-  cache.addOrder(sellOrder2);
-  cache.addOrder(sellOrder3);
+  cache.addOrder(Order{"ID_1", "SECURITYID_1", "Buy", 10000, "User_1", "A"});
+  cache.addOrder(Order{"ID_2", "SECURITYID_1", "Sell", 3000, "User_1", "B"});
+  cache.addOrder(Order{"ID_3", "SECURITYID_1", "Sell", 3000, "User_4", "B"});
+  cache.addOrder(Order{"ID_4", "SECURITYID_1", "Sell", 3000, "User_2", "B"});
 
   REQUIRE(cache.getMatchedQuantity("SECURITYID_1") == 9000);
 }
 
-TEST_CASE("SellOrderDistributedAccross3BuyOrder", "SecurityIdTest") {
+TEST_CASE("SellOrderDistributedAccross3BuyOrder", "[ordercache]") {
   OrderCache cache;
 
-  const auto sellOrder = Order{"ID_1", "SECURITYID_1", "Sell", 10000, "User_1", "A"};
-
-  const auto buyOrder1 = Order{"ID_2", "SECURITYID_1", "Buy", 3000, "User_1", "B"};
-  const auto buyOrder2 = Order{"ID_3", "SECURITYID_1", "Buy", 3000, "User_4", "B"};
-  const auto buyOrder3 = Order{"ID_4", "SECURITYID_1", "Buy", 3000, "User_2", "B"};
-
-  cache.addOrder(sellOrder);
-  cache.addOrder(buyOrder1);
-  cache.addOrder(buyOrder2);
-  cache.addOrder(buyOrder3);
+  cache.addOrder(Order{"ID_1", "SECURITYID_1", "Sell", 10000, "User_1", "A"});
+  cache.addOrder(Order{"ID_2", "SECURITYID_1", "Buy", 3000, "User_1", "B"});
+  cache.addOrder(Order{"ID_3", "SECURITYID_1", "Buy", 3000, "User_4", "B"});
+  cache.addOrder(Order{"ID_4", "SECURITYID_1", "Buy", 3000, "User_2", "B"});
 
   REQUIRE(cache.getMatchedQuantity("SECURITYID_1") == 9000);
 }
 
-TEST_CASE("BuyOrderDistributedAccross3SellOrderCancelOneSellOrder", "SecurityIdTest") {
+TEST_CASE("BuyOrderDistributedAccross3SellOrderCancelOneSellOrder", "[ordercache]") {
   OrderCache cache;
 
-  const auto buyOrder = Order{"ID_1", "SECURITYID_1", "Buy", 10000, "User_1", "A"};
-
-  const auto sellOrder1 = Order{"ID_2", "SECURITYID_1", "Sell", 3000, "User_1", "B"};
-  const auto sellOrder2 = Order{"ID_3", "SECURITYID_1", "Sell", 3000, "User_4", "B"};
-  const auto sellOrder3 = Order{"ID_4", "SECURITYID_1", "Sell", 3000, "User_2", "B"};
-
-
-
-  cache.addOrder(buyOrder);
-  cache.addOrder(sellOrder1);
-  cache.addOrder(sellOrder2);
-  cache.addOrder(sellOrder3);
+  cache.addOrder(Order{"ID_1", "SECURITYID_1", "Buy", 10000, "User_1", "A"});
+  cache.addOrder(Order{"ID_2", "SECURITYID_1", "Sell", 3000, "User_1", "B"});
+  cache.addOrder(Order{"ID_3", "SECURITYID_1", "Sell", 3000, "User_4", "B"});
+  cache.addOrder(Order{"ID_4", "SECURITYID_1", "Sell", 3000, "User_2", "B"});
   cache.cancelOrder("ID_4");
 
   REQUIRE(cache.getMatchedQuantity("SECURITYID_1") == 6000);
 }
 
-TEST_CASE("BuyOrderDistributedAccross3SellOrderCancelOneSellOrderAndAddAnotherOne", "SecurityIdTest") {
+TEST_CASE("BuyOrderDistributedAccross3SellOrderCancelOneSellOrderAndAddAnotherOne", "[ordercache]") {
   OrderCache cache;
 
-  const auto buyOrder = Order{"ID_1", "SECURITYID_1", "Buy", 10000, "User_1", "A"};
-
-  const auto sellOrder1 = Order{"ID_2", "SECURITYID_1", "Sell", 3000, "User_1", "B"};
-  const auto sellOrder2 = Order{"ID_3", "SECURITYID_1", "Sell", 3000, "User_4", "B"};
-  const auto sellOrder3 = Order{"ID_4", "SECURITYID_1", "Sell", 3000, "User_2", "B"};
-
-  cache.addOrder(buyOrder);
-  cache.addOrder(sellOrder1);
-  cache.addOrder(sellOrder2);
-  cache.addOrder(sellOrder3);
+  cache.addOrder(Order{"ID_1", "SECURITYID_1", "Buy", 10000, "User_1", "A"});
+  cache.addOrder(Order{"ID_2", "SECURITYID_1", "Sell", 3000, "User_1", "B"});
+  cache.addOrder(Order{"ID_3", "SECURITYID_1", "Sell", 3000, "User_4", "B"});
+  cache.addOrder(Order{"ID_4", "SECURITYID_1", "Sell", 3000, "User_2", "B"});
   cache.cancelOrder("ID_4");
 
   REQUIRE(cache.getMatchedQuantity("SECURITYID_1") == 6000);
 
-  const auto sellOrder4 = Order{"ID_5", "SECURITYID_1", "Sell", 6000, "User_2", "B"};
-  cache.addOrder(sellOrder4);
+  cache.addOrder(Order{"ID_5", "SECURITYID_1", "Sell", 6000, "User_2", "B"});
   REQUIRE(cache.getMatchedQuantity("SECURITYID_1") == 10000);
 }
 
-TEST_CASE("RemoveAtGivenQuantity", "SecurityIdTest") {
+TEST_CASE("RemoveAtGivenQuantity", "[ordercache]") {
   OrderCache cache;
 
-  const auto buyOrder = Order{"ID_1", "SECURITYID_1", "Buy", 10000, "User_1", "A"};
-
-  const auto sellOrder1 = Order{"ID_2", "SECURITYID_1", "Sell", 2000, "User_1", "B"};
-  const auto sellOrder2 = Order{"ID_3", "SECURITYID_1", "Sell", 3000, "User_4", "B"};
-  const auto sellOrder3 = Order{"ID_4", "SECURITYID_1", "Sell", 3000, "User_2", "B"};
-
-  cache.addOrder(buyOrder);
-  cache.addOrder(sellOrder1);
-  cache.addOrder(sellOrder2);
-  cache.addOrder(sellOrder3);
+  cache.addOrder(Order{"ID_1", "SECURITYID_1", "Buy", 10000, "User_1", "A"});
+  cache.addOrder(Order{"ID_2", "SECURITYID_1", "Sell", 2000, "User_1", "B"});
+  cache.addOrder(Order{"ID_3", "SECURITYID_1", "Sell", 3000, "User_4", "B"});
+  cache.addOrder(Order{"ID_4", "SECURITYID_1", "Sell", 3000, "User_2", "B"});
 
   REQUIRE(cache.getMatchedQuantity("SECURITYID_1") == 8000);
   
@@ -196,25 +142,16 @@ TEST_CASE("RemoveAtGivenQuantity", "SecurityIdTest") {
   REQUIRE(cache.getMatchedQuantity("SECURITYID_1") == 6000);
 }
 
-TEST_CASE("RemoveAboveGivenQuantity", "SecurityIdTest") {
+TEST_CASE("RemoveAboveGivenQuantity", "[ordercache]") {
   OrderCache cache;
 
-  const auto sellOrder1 = Order{"ID_1", "SECURITYID_1", "Sell", 2000, "User_1", "A"};
-  const auto sellOrder2 = Order{"ID_1", "SECURITYID_1", "Sell", 2000, "User_1", "A"};
-  const auto sellOrder3 = Order{"ID_1", "SECURITYID_1", "Sell", 2000, "User_1", "A"};
-  const auto sellOrder4 = Order{"ID_1", "SECURITYID_1", "Sell", 2000, "User_1", "A"};
-
-  const auto buyOrder1 = Order{"ID_2", "SECURITYID_1", "Buy", 2000, "User_1", "B"};
-  const auto buyOrder2 = Order{"ID_3", "SECURITYID_1", "Buy", 2501, "User_4", "B"};
-  const auto buyOrder3 = Order{"ID_4", "SECURITYID_1", "Buy", 3000, "User_2", "B"};
-
-  cache.addOrder(sellOrder1);
-  cache.addOrder(sellOrder2);
-  cache.addOrder(sellOrder3);
-  cache.addOrder(sellOrder4);
-  cache.addOrder(buyOrder1);
-  cache.addOrder(buyOrder2);
-  cache.addOrder(buyOrder3);
+  cache.addOrder(Order{"ID_1", "SECURITYID_1", "Sell", 2000, "User_1", "A"});
+  cache.addOrder(Order{"ID_1", "SECURITYID_1", "Sell", 2000, "User_1", "A"});
+  cache.addOrder(Order{"ID_1", "SECURITYID_1", "Sell", 2000, "User_1", "A"});
+  cache.addOrder(Order{"ID_1", "SECURITYID_1", "Sell", 2000, "User_1", "A"});
+  cache.addOrder(Order{"ID_2", "SECURITYID_1", "Buy", 2000, "User_1", "B"});
+  cache.addOrder(Order{"ID_3", "SECURITYID_1", "Buy", 2501, "User_4", "B"});
+  cache.addOrder(Order{"ID_4", "SECURITYID_1", "Buy", 3000, "User_2", "B"});
 
   REQUIRE(cache.getMatchedQuantity("SECURITYID_1") == 7501);
   
@@ -222,14 +159,13 @@ TEST_CASE("RemoveAboveGivenQuantity", "SecurityIdTest") {
   REQUIRE(cache.getMatchedQuantity("SECURITYID_1") == 2000);
 }
 
-TEST_CASE("AddOrderPerformanceTest", "SecurityIdTest") {
+TEST_CASE("AddOrderPerformanceTest", "[performance]") {
   constexpr int NUM_OF_SAMPLES = 10000;
   OrderCache cache;
 
   for(int i = 0; i < 10000; ++i){
-    const auto sellOrder = Order{"SELL" + std::to_string(i), "SECURITYID_1", "Sell", 1000, "User_1", "COMP_" + std::to_string(i)};
 
-    cache.addOrder(sellOrder);
+    cache.addOrder(Order{"SELL" + std::to_string(i), "SECURITYID_1", "Sell", 1000, "User_1", "COMP_" + std::to_string(i)});
   }
 
   //prepare ids:
@@ -249,14 +185,12 @@ TEST_CASE("AddOrderPerformanceTest", "SecurityIdTest") {
 
 }
 
-TEST_CASE("RemoveGivenOrderIDPerformanceTest", "SecurityIdTest") {
+TEST_CASE("RemoveGivenOrderIDPerformanceTest", "[performance]") {
   constexpr int NUM_OF_SAMPLES = 1000;
   OrderCache cache;
 
   for(int i = 0; i < 1000; ++i){
-    const auto sellOrder = Order{"SELL" + std::to_string(i), "SECURITYID_1", "Sell", 1000, "User_1", "COMP_" + std::to_string(i)};
-
-    cache.addOrder(sellOrder);
+    cache.addOrder(Order{"SELL" + std::to_string(i), "SECURITYID_1", "Sell", 1000, "User_1", "COMP_" + std::to_string(i)});
   }
 
   //prepare ids:
@@ -279,14 +213,12 @@ TEST_CASE("RemoveGivenOrderIDPerformanceTest", "SecurityIdTest") {
 
 }
 
-TEST_CASE("RemoveAboveGivenQuantityPerformanceTest", "SecurityIdTest") {
+TEST_CASE("RemoveAboveGivenQuantityPerformanceTest", "[performance]") {
   constexpr int NUM_OF_SAMPLES = 1000;
   OrderCache cache;
 
   for(int i = 0; i < 1; ++i){
-    const auto sellOrder = Order{"SELL" + std::to_string(i), "SECURITYID_1", "Sell", 1000, "User_1", "COMP_" + std::to_string(i)};
-
-    cache.addOrder(sellOrder);
+    cache.addOrder(Order{"SELL" + std::to_string(i), "SECURITYID_1", "Sell", 1000, "User_1", "COMP_" + std::to_string(i)});
   }
 
   //prepare ids:

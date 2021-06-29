@@ -7,16 +7,19 @@ int SecurityId::getMatchedQuantity() const {
             [](int sum, const Matcher& m){ return sum + m.getMatchedQuantity();});
 }
 
-void SecurityId::appendOrder(const Order& order){
+void SecurityId::appendOrder(Order order){
+    const auto orderID = order.orderID;
+    const int quantity = order.initialQuantity;
     if(order.side == "Sell"){
-        matchers.emplace_back(order);
+        Matcher matcher{std::move(order)};
+        matchers.push_back(std::move(matcher));
     } else {
-        unmatchedOrdersQueue.push_back(order);
+        unmatchedOrdersQueue.push_back(std::move(order));
     }
     feedMatchersWithQueuedOrders();
 
-    quantityToOrderId.emplace(order.initialQuantity, order.orderID);
-    orderIdToQuantity.emplace(order.orderID, order.initialQuantity);
+    quantityToOrderId.emplace(quantity, orderID);
+    orderIdToQuantity.emplace(orderID, quantity);
 }
 
 void SecurityId::cancelOrderByOrderId(const std::string& orderID){
@@ -30,7 +33,7 @@ void SecurityId::cancelOrderByOrderId(const std::string& orderID){
 void SecurityId::cancelOrderAtQuantity(int quantity){
     auto range = quantityToOrderId.equal_range(quantity);
     for (auto it=range.first; it!=range.second; ++it){
-        for(auto matcher: matchers){
+        for(auto& matcher: matchers){
             removeBuyOrder(it->second);
             removeSellOrder(it->second);
             orderIdToQuantity.erase(it->second);
@@ -56,9 +59,7 @@ void SecurityId::cancelOrderAboveQuantity(int quantity){
 //private:
 void SecurityId::removeBuyOrder(const std::string& orderID)
 {
-    for(auto& matcher: matchers){
-        matcher.removeBuyOrder(orderID);
-    }
+    matchedOrders.erase(orderID);
     
     auto beginToRemoveIt = std::remove_if(unmatchedOrdersQueue.begin(), unmatchedOrdersQueue.end(), 
                                 [&orderID](const Order& o){ return o.orderID == orderID;});
@@ -76,25 +77,30 @@ void SecurityId::removeSellOrder(const std::string& orderID)
     }
 }
 
-void SecurityId::mergeBuyOrdersAfterRemovingSellOrder(const std::vector<Order>& orders){
+void SecurityId::mergeBuyOrdersAfterRemovingSellOrder(const std::vector<Order*>& orders){
     for(const auto& order: orders){
         auto foundIt = std::find_if(unmatchedOrdersQueue.begin(), unmatchedOrdersQueue.end(), 
-        [&order](const Order& o){ return order.orderID == o.orderID;});
+        [&order](const Order& o){ return order->orderID == o.orderID;});
         if(foundIt != unmatchedOrdersQueue.end()){
-            foundIt->quantity += order.quantity;
+            foundIt->quantity += order->quantity;
         } else {
-            unmatchedOrdersQueue.push_back(order);
+            auto findIt = matchedOrders.find(order->orderID);
+            Order order = std::move(findIt->second);
+            matchedOrders.erase(findIt);
+            unmatchedOrdersQueue.push_back(std::move(order));
         }
     }
 }
 
-std::optional<Order> SecurityId::feedMatchers(const Order& order){
-    std::optional<Order> currentOrder = order;
+std::optional<Order> SecurityId::feedMatchers(Order order){
+    const auto orderId = order.orderID;
+    std::optional<Order> currentOrder(std::move(order));
     for(auto& matcher: matchers){
-        if(matcher.hasRemainingSellQuantity() && matcher.sellOrderCompanyName() != order.companyName){
-            currentOrder = matcher.addBuyOrder(*currentOrder);
+        if(matcher.hasRemainingSellQuantity() && matcher.sellOrderCompanyName() != currentOrder->companyName){
+            auto it = matchedOrders.emplace(orderId, std::move(*currentOrder));
+            currentOrder = matcher.addBuyOrder(&(it->second));
             if(!currentOrder){
-                return currentOrder;
+                return std::nullopt;
             }
         }
     }
@@ -104,13 +110,13 @@ std::optional<Order> SecurityId::feedMatchers(const Order& order){
 void SecurityId::feedMatchersWithQueuedOrders(){
     //check if we can handle now existing buy orders:
     std::vector<Order> resultQueue;
-    for(const auto& order: unmatchedOrdersQueue){
-        auto remainingOrder = feedMatchers(order);
+    for(auto& order: unmatchedOrdersQueue){
+        auto remainingOrder = feedMatchers(std::move(order));
         if(remainingOrder){
-            resultQueue.push_back(*remainingOrder);
+            resultQueue.push_back(std::move(*remainingOrder));
         }
     }
-    unmatchedOrdersQueue = resultQueue;
+    unmatchedOrdersQueue = std::move(resultQueue);
 }
 
 void SecurityId::removeFromInternalQuantityMapping(const std::string& orderID){

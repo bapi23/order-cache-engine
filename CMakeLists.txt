@@ -9,6 +9,7 @@ add_executable(
   main_test.cpp
   src/OrderCache.cpp
   src/SecurityId.cpp
+  src/Order.cpp
   catch2/catch.cpp
 )
 

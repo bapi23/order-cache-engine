@@ -11,7 +11,7 @@
 class SecurityId{
 public:
     int getMatchedQuantity() const;
-    void appendOrder(const Order& order);
+    void appendOrder(Order order);
 
     void cancelOrderByOrderId(const std::string& orderID);
     void cancelOrderAtQuantity(int quantity);
@@ -22,12 +22,13 @@ private:
     void removeBuyOrder(const std::string& orderID);
     void removeSellOrder(const std::string& orderID);
 
-    std::optional<Order> feedMatchers(const Order& order);
+    std::optional<Order> feedMatchers(Order order);
     void feedMatchersWithQueuedOrders();
 
     void removeFromInternalQuantityMapping(const std::string& orderID);
-    void mergeBuyOrdersAfterRemovingSellOrder(const std::vector<Order>& orders);
+    void mergeBuyOrdersAfterRemovingSellOrder(const std::vector<Order*>& orders);
 
+    std::multimap<std::string, Order> matchedOrders;
     std::vector<Matcher> matchers;
     std::vector<Order> unmatchedOrdersQueue;
 

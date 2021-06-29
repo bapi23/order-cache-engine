@@ -1,12 +1,13 @@
 #include "OrderCache.h"
 
-void OrderCache::addOrder(const Order& order){
+void OrderCache::addOrder(Order order){
     if(securityIds.find(order.securityID) == securityIds.end()){
         securityIds[order.securityID] = SecurityId{};
     }
-    securityIds[order.securityID].appendOrder(order);
     orderIdToSecurityId[order.orderID] = order.securityID;
     userIdToOrderIds[order.userID].push_back(order.orderID);
+    
+    securityIds[order.securityID].appendOrder(std::move(order));
 }
 
 void OrderCache::cancelOrder(const std::string& orderID){
