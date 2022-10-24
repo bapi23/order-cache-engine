@@ -1,6 +1,6 @@
-##Order cache exercise
+## Order cache exercise
 
-###Building
+### Building
 - Implmementation doesn't require any dependency
 - Catch library is contained in catch2/ folder
 
@@ -12,14 +12,14 @@ cmake -DCMAKE_BUIL_TYPE=Release ..
 make -j
 ```
 
-##Running
+## Running
 - One binary will be created `OrderCacheTest`
 - Run all tests including performance ones:
 ```
 ./build/OrderCacheTest
 ```
 
-####Example of the output:
+#### Example of the output:
 ```
 10000 orders added in: 17399[µs]
 1000 Orders removed in: 17248[µs]
